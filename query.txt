@@ -1,0 +1,19 @@
+query selectCommodities {
+  description: "Select all commodities"
+  statement:
+      SELECT com.cts.ipm.track.newProduct
+        
+}
+query selectProductByUuid{
+  description: "Display product status based on id"
+  statement:
+      SELECT com.cts.ipm.track.newProduct
+          WHERE (uuid == _$uuid)
+}
+
+query selectTamperedProducts{
+  description: "Select all products which are tampered"
+  statement:
+      SELECT com.cts.ipm.track.newProduct
+          WHERE (product.productStatus == "TAMPERED")
+}

@@ -1,0 +1,133 @@
+
+/**
+ * to display status with id
+ * @param {com.cts.ipm.track.TamperedProduct} tampered -
+ * @transaction
+ */
+async function TamperedProduct() {   
+    const results = await query('selectTamperedProducts');
+  	const factory = getFactory();
+    const TamperedProductEvent = factory.newEvent('com.cts.ipm.track', 'TamperedProductEvent');
+      	if(results.length>0)
+        {
+          for(let i=0;i<results.length;i++)
+          {
+    		 TamperedProductEvent.uuid = results[i].uuid;
+   			 TamperedProductEvent.product = results[i].product;
+          	 emit(TamperedProductEvent);  
+          }
+         
+        }
+		else  
+    	 throw new Error('Product  not available for the given UUID');
+
+}
+
+
+
+/**
+ * Publish a new bond
+ * @param {com.cts.ipm.track.CreateProduct} createProduct - the publishBond transaction
+ * @transaction
+ */
+async function createProduct(createProduct) {  // eslint-disable-line no-unused-vars
+
+    const registry = await getAssetRegistry('com.cts.ipm.track.newProduct');
+    const factory = getFactory();
+
+    // Create the bond asset.
+    const newProduct = factory.newResource('com.cts.ipm.track', 'newProduct', createProduct.uuid);
+    newProduct.product = createProduct.product;
+
+    // Add the bond asset to the registry.
+    await registry.add(newProduct);
+}
+
+ /**
+ * Update the status of an order
+ * @param {com.cts.ipm.track.UpdateProductStatus} productStatus -
+ * @transaction
+ */
+async function UpdateProductStatus(productStatus) { // eslint-disable-line no-unused-vars
+
+    const factory = getFactory()
+    const productRegistry = await getAssetRegistry('com.cts.ipm.track.newProduct'); 
+        if (!productStatus.uuid) {
+            throw new Error('Product  not available for the given UUID');          
+        } 
+  
+  const new_product = await productRegistry.get(productStatus.uuid);
+  console.log(new_product.product.productStatus)
+ 	if(new_product.product.productStatus!= 'TAMPERED')
+    {
+  		if(new_product.product.productStatus!=  productStatus.status)
+        {
+          new_product.product.productStatus =  productStatus.status
+          await productRegistry.update(new_product);
+       }
+		else
+    	 throw new Error('No stauts to update'); 
+    }
+  else
+  {  
+     throw new Error('You cant change status of a tampered product');     
+  }      
+   }
+ /**
+ * Update the status of an order
+ * @param {com.cts.ipm.track.UpdateShipmentStatus} shipmentStatus -
+ * @transaction
+ */
+async function UpdateShipmentStatus(shipmentStatus) { // eslint-disable-line no-unused-vars
+
+    const factory = getFactory();
+    const productRegistry = await getAssetRegistry('com.cts.ipm.track.newProduct'); 
+        if (!shipmentStatus.uuid) {
+            throw new Error('Product  not available for the given UUID');          
+        } 
+         const new_product = await productRegistry.get(shipmentStatus.uuid);
+ 	if(new_product.product.productStatus!= 'TAMPERED')
+    {
+      	if(new_product.product.shipmentStatus!=  shipmentStatus.status )
+        { 
+          new_product.product.shipmentStatus =  shipmentStatus.status
+          await productRegistry.update(new_product);
+        }
+		 else
+    	 throw new Error('No stauts to update'); 
+    }
+  else
+  {  
+     throw new Error('You cant change status of a tampered product');     
+  }      
+   }
+
+/**
+ * Search the product by uuid
+ * @param {com.cts.ipm.track.searchProduct} search - the publishBond transaction
+ * @transaction
+ */
+async function searchProduct(search) {  // eslint-disable-line no-unused-vars
+
+  const results = await query('selectProductByUuid', {uuid : search.uuid});
+  if(results.length>0) {
+    const factory = getFactory();
+    const productRegistry = await getAssetRegistry('com.cts.ipm.track.newProduct'); 
+    const new_product = await productRegistry.get(search.uuid);
+    
+    const SearchProductEvent = factory.newEvent('com.cts.ipm.track', 'SearchProductEvent');
+    console.log("event emitted" +results[0]);
+    SearchProductEvent.uuid = results[0].uuid;
+    SearchProductEvent.product = results[0].product;
+    emit(SearchProductEvent);
+	new_product.product = results[0].product;
+    console.log(new_product.product+'  '+new_product.product)
+    await productRegistry.update(new_product); 
+
+
+  
+  }
+  else
+    throw new Error('Product  not available for the given UUID');   
+}
+
